@@ -24,6 +24,7 @@ option(REXGLUE_ENABLE_FIDELITYFX "Enable optional AMD FidelityFX integration (ex
 option(REXGLUE_ENABLE_TRACY                "Enable Tracy profiler integration" ON)
 option(REXGLUE_ENABLE_PERF_COUNTERS        "Enable lightweight perf counter registry and overlay" ON)
 option(REXGLUE_PLATFORM_SWITCH             "Build for Nintendo Switch (devkitA64 + libnx; set by the toolchain file)" OFF)
+option(REXGLUE_BUILD_TOOLS                 "Build rexglue host CLI and codegen tools" ON)
 # Propagate profiling defines globally (compiled out in Release)
 if(REXGLUE_ENABLE_TRACY)
     add_compile_definitions($<$<NOT:$<CONFIG:Release>>:REXGLUE_ENABLE_PROFILING>)
@@ -294,7 +295,7 @@ add_subdirectory(src/audio)
 add_subdirectory(src/graphics)
 add_subdirectory(src/system)
 add_subdirectory(src/kernel)
-if(NOT REXGLUE_PLATFORM_SWITCH AND NOT ANDROID)
+if(NOT REXGLUE_PLATFORM_SWITCH AND NOT ANDROID AND REXGLUE_BUILD_TOOLS)
     # Host tools. Code generation runs on the PC; a Switch build compiles its
     # output.
     add_subdirectory(src/codegen)

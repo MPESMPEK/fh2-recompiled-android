@@ -3,8 +3,12 @@ name: Build Android APK
 on:
   push:
     branches: [ "**" ]
+    paths-ignore:
+      - '.github/workflows/build_windows.yml'
   pull_request:
     branches: [ "**" ]
+    paths-ignore:
+      - '.github/workflows/build_windows.yml'
   workflow_dispatch:
 
 permissions:
