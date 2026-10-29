@@ -76,76 +76,7 @@ jobs:
       - name: Prepare Distribution Package
         shell: pwsh
         run: |
-          $exe = Get-ChildItem -Path . -Filter "fh2.exe" -Recurse | Select-Object -First 1
-          if (-not $exe) {
-            throw "fh2.exe not found in build directory!"
-          }
-          $outDir = $exe.DirectoryName
-          Write-Host "Output directory located at: $outDir"
-          Get-ChildItem -Path $outDir
-
-          New-Item -ItemType Directory -Path dist/fh2-windows-x64 -Force
-          Copy-Item "$outDir\fh2.exe" dist/fh2-windows-x64/
-          Copy-Item "$outDir\*.dll" dist/fh2-windows-x64/
-          if (Test-Path "$outDir\*.pdb") {
-            Copy-Item "$outDir\*.pdb" dist/fh2-windows-x64/
-          }
-
-          @'
-@echo off
-title FH2 Recompiled - DirectX 12
-echo =========================================================
-echo   FH2 Recompiled (Windows PC x64) - D3D12
-echo =========================================================
-echo.
-echo Pastikan Anda memiliki game dump Forza Horizon 2 (Xbox 360).
-echo Masukkan flag --game_data_root="C:\path\ke\folder_game" jika belum ada.
-echo.
-fh2.exe --gpu_plugin=xenos --gpu=d3d12 --gpu_allow_invalid_fetch_constants=true --mnk_mode=true --mnk_preset=race %*
-pause
-'@ | Out-File -FilePath dist/fh2-windows-x64/run_d3d12.bat -Encoding ASCII
-
-          @'
-@echo off
-title FH2 Recompiled - Vulkan
-echo =========================================================
-echo   FH2 Recompiled (Windows PC x64) - Vulkan
-echo =========================================================
-echo.
-echo Pastikan Anda memiliki game dump Forza Horizon 2 (Xbox 360).
-echo Masukkan flag --game_data_root="C:\path\ke\folder_game" jika belum ada.
-echo.
-fh2.exe --gpu_plugin=xenos --gpu=vulkan --gpu_allow_invalid_fetch_constants=true --mnk_mode=true --mnk_preset=race %*
-pause
-'@ | Out-File -FilePath dist/fh2-windows-x64/run_vulkan.bat -Encoding ASCII
-
-          @'
-FH2 Recompiled for Windows PC (x64)
-====================================
-Kebutuhan Sistem:
-- OS: Windows 10 / 11 64-bit
-- GPU: DirectX 12 / Vulkan kompatibel
-
-Cara Menjalankan:
-1. Double-click run_d3d12.bat (DirectX 12) atau run_vulkan.bat (Vulkan).
-2. Anda juga dapat memasukkan path folder game atau ISO langsung:
-   fh2.exe --game_data_root="D:\Games\ForzaHorizon2" --gpu=d3d12 --mnk_mode=true --mnk_preset=race
-
-Kontrol Keyboard (Mode Balap / Race Layout):
-- W : Gas (Throttle)
-- S : Rem (Brake)
-- A / D : Belok Kiri / Kanan (Steer)
-- Spasi : Rem Tangan (Handbrake / Tombol A)
-- Panah / Mouse : Kamera
-- I, J, K, L : D-Pad
-- Enter : Start
-- Esc / Tab : Back
-- F4 : Menu Pengaturan / Remap Controller langsung di game
-'@ | Out-File -FilePath dist/fh2-windows-x64/README.txt -Encoding UTF8
-
-          Compress-Archive -Path dist/fh2-windows-x64/* -DestinationPath dist/fh2-windows-x64.zip -Force
-          Write-Host "Distribution archive created:"
-          Get-Item dist/fh2-windows-x64.zip | Select-Object Name, Length, LastWriteTime
+          pwsh tools/package_windows.ps1
 
       - name: Upload Artifact
         uses: actions/upload-artifact@v4
@@ -161,8 +92,8 @@ Kontrol Keyboard (Mode Balap / Race Layout):
         shell: pwsh
         run: |
           $TAG = "v0.4.3-windows"
-          gh release delete "$TAG" --yes 2>$null || true
-          git tag -d "$TAG" 2>$null || true
-          gh release create "$TAG" "dist/fh2-windows-x64.zip" `
+          try { gh release delete $TAG --yes } catch {}
+          try { git tag -d $TAG } catch {}
+          gh release create $TAG "dist/fh2-windows-x64.zip" `
             --title "FH2 Recompiled Windows PC v0.4.3 (x64)" `
             --notes "Native Windows x64 build (fh2.exe) with Direct3D 12 and Vulkan backend support. Includes launcher batch scripts and keyboard racing layout."
