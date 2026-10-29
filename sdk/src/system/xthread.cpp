@@ -61,9 +61,11 @@ REXCVAR_DEFINE_BOOL(ppc_fixed_fp_mode, REX_FIXED_FP_MODE_DEFAULT, "CPU",
                     "Run guest code in IEEE FP mode only: never turn on flush-to-zero for VMX code, which skips the "
                     "host FP control writes around it. VMX results keep denormals the console flushes");
 
+#if !defined(_WIN32)
 namespace rex::ppc {
 std::atomic<bool> g_fixed_fp_mode{REX_FIXED_FP_MODE_DEFAULT};
 }  // namespace rex::ppc
+#endif
 
 namespace rex::system {
 

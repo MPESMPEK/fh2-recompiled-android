@@ -149,7 +149,11 @@ constexpr uint32_t kRoundMask = 0x03;
 // ppc_fixed_fp_mode (src/system/xthread.cpp): guest code never turns flush-to-zero on, so VMX code keeps the
 // denormals the console flushes and the per-site writes of the host FP control register (FPCR on ARM64, a
 // serializing write) are skipped. Read on the toggles' rare path only. One definition, in the runtime.
+#if defined(_WIN32)
+inline std::atomic<bool> g_fixed_fp_mode{false};
+#else
 extern std::atomic<bool> g_fixed_fp_mode;
+#endif
 
 struct FPSCRRegister {
   uint32_t csr;
