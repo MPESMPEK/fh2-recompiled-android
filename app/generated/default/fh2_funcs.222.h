@@ -1,0 +1,8 @@
+#pragma once
+
+#include "fh2_pch.h"
+
+DECLARE_REX_FUNC(sub_8240D860);
+DECLARE_REX_FUNC(sub_8241CC68);
+DECLARE_REX_FUNC(sub_8242A0E0);
+DECLARE_REX_FUNC(sub_8245FE30);
