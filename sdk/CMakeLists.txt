@@ -154,6 +154,12 @@ add_compile_options(
     -fno-char8_t
 )
 
+if(CMAKE_SYSTEM_PROCESSOR MATCHES "AMD64|x86_64")
+    if(NOT CMAKE_CXX_COMPILER_ID STREQUAL "MSVC")
+        add_compile_options(-msse4.1)
+    endif()
+endif()
+
 if(ANDROID)
     # Keep NDK-produced shared libraries loadable on 16 KiB page-size devices.
     add_link_options("-Wl,-z,max-page-size=16384")
