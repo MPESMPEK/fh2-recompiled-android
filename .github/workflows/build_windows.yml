@@ -33,10 +33,10 @@ jobs:
           submodules: recursive
           fetch-depth: 1
 
-      - name: Set up Ninja
-        uses: ashutoshvarma/setup-ninja@v1
-        with:
-          version: 1.11.1
+      - name: Install Ninja
+        shell: pwsh
+        run: |
+          choco install ninja --no-progress
 
       - name: Set up MSVC environment
         uses: ilammy/msvc-dev-cmd@v1
