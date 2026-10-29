@@ -17,7 +17,7 @@ New-Item -ItemType Directory -Path $distDir -Force
 
 Write-Host "Copying binary and DLLs..."
 Copy-Item "$outDir\fh2.exe" "$distDir/"
-Get-ChildItem -Path . -Filter "*.dll" -Recurse | ForEach-Object {
+Get-ChildItem -Path . -Filter "*.dll" -Recurse | Where-Object { $_.FullName -notlike "*\dist\*" } | ForEach-Object {
     Write-Host "Staging DLL: $($_.FullName)"
     Copy-Item $_.FullName "$distDir/" -Force
 }
