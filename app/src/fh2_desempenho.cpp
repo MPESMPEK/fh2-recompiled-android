@@ -19,14 +19,13 @@
 // for fences the CP writes mid-buffer, and sleeping there would add latency. Cvar fh2_espera_anel turns it off
 // to compare.
 
-#include <dlfcn.h>
-
 #include <algorithm>
 #include <atomic>
 #include <chrono>
 #include <cstdint>
 
 #if defined(__linux__)
+#include <dlfcn.h>
 #include <linux/futex.h>
 #include <sys/syscall.h>
 #include <unistd.h>
@@ -73,6 +72,7 @@ namespace {
 // The GPU plugin's counters, looked up once it is loaded; or the native renderer's ring, once it has returned a read
 // pointer (its sequence has moved).
 const ReadPointerSignal* Signal() {
+#if defined(__linux__)
   static ReadPointerSignal signal;
   static std::atomic<bool> ready{false};
   if (!ready.load(std::memory_order_acquire)) {
@@ -101,6 +101,9 @@ const ReadPointerSignal* Signal() {
     ready.store(true, std::memory_order_release);
   }
   return signal.sequence && signal.waiters ? &signal : nullptr;
+#else
+  return nullptr;
+#endif
 }
 
 bool IsRingWait(uint32_t return_address) {

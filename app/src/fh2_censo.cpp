@@ -18,8 +18,18 @@
 #include <rex/ppc/context.h>
 #include <rex/ppc/func.h>
 
+#if defined(_WIN32)
+#ifndef WIN32_LEAN_AND_MEAN
+#define WIN32_LEAN_AND_MEAN
+#endif
+#ifndef NOMINMAX
+#define NOMINMAX
+#endif
+#include <windows.h>
+#else
 #include <sys/uio.h>
 #include <unistd.h>
+#endif
 
 REXCVAR_DEFINE_BOOL(fh2_censo, false, "FH2",
                     "Debug: count calls into the game's D3D library and log them every 150 frames");
@@ -672,8 +682,16 @@ CensoEntry g_entries[kEntries] = {
 bool ReadGuest(uint8_t* base, uint32_t address, uint32_t& value) {
   if (address < 0x10000 || address >= 0xFFFF0000u) return false;
   uint32_t raw;
+#if defined(_WIN32)
+  SIZE_T bytesRead = 0;
+  if (!ReadProcessMemory(GetCurrentProcess(), static_cast<LPCVOID>(base + address), &raw, sizeof(raw), &bytesRead) ||
+      bytesRead != sizeof(raw)) {
+    return false;
+  }
+#else
   iovec local{&raw, 4}, remote{base + address, 4};
   if (process_vm_readv(getpid(), &local, 1, &remote, 1, 0) != 4) return false;
+#endif
   value = __builtin_bswap32(raw);
   return true;
 }

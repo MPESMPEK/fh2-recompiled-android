@@ -8,6 +8,26 @@
 // fh2_perfil_duracao_s seconds it writes fh2_perfil.txt next to the log: one line per address, "count library
 // offset", most frequent first. Symbolize with tools/perfil_simbolos.py (addr2line).
 
+#include <rex/cvar.h>
+#include <rex/logging.h>
+
+REXCVAR_DEFINE_DOUBLE(fh2_perfil_s, 0.0, "FH2",
+                      "Debug: start sampling one thread this many seconds after start (0 = off); app/src/fh2_perfil.cpp")
+    .lifecycle(rex::cvar::Lifecycle::kInitOnly);
+REXCVAR_DEFINE_DOUBLE(fh2_perfil_duracao_s, 10.0, "FH2", "Debug: how long the sampling profiler runs")
+    .lifecycle(rex::cvar::Lifecycle::kInitOnly);
+REXCVAR_DEFINE_STRING(fh2_perfil_thread, "GPU Commands", "FH2",
+                      "Debug: the sampled thread, by the start of its name")
+    .lifecycle(rex::cvar::Lifecycle::kInitOnly);
+
+#if defined(_WIN32)
+
+void Fh2PerfilStart() {
+  // In-process SIGPROF profiling is unsupported on Windows.
+}
+
+#else
+
 #include <dlfcn.h>
 #include <signal.h>
 #include <unwind.h>
@@ -28,18 +48,6 @@
 #include <string>
 #include <thread>
 #include <vector>
-
-#include <rex/cvar.h>
-#include <rex/logging.h>
-
-REXCVAR_DEFINE_DOUBLE(fh2_perfil_s, 0.0, "FH2",
-                      "Debug: start sampling one thread this many seconds after start (0 = off); app/src/fh2_perfil.cpp")
-    .lifecycle(rex::cvar::Lifecycle::kInitOnly);
-REXCVAR_DEFINE_DOUBLE(fh2_perfil_duracao_s, 10.0, "FH2", "Debug: how long the sampling profiler runs")
-    .lifecycle(rex::cvar::Lifecycle::kInitOnly);
-REXCVAR_DEFINE_STRING(fh2_perfil_thread, "GPU Commands", "FH2",
-                      "Debug: the sampled thread, by the start of its name")
-    .lifecycle(rex::cvar::Lifecycle::kInitOnly);
 
 namespace {
 
@@ -279,3 +287,5 @@ void Fh2PerfilStart() {
     std::thread(Run).detach();
   }
 }
+
+#endif

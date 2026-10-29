@@ -8,8 +8,18 @@
 // the frame loop that only gave the Xbox 360's cores to another thread (as Black's frame throttle did, see
 // ../referencias/Black-Android/src/game/hooks.cpp) show up here as a steady cost per second.
 
+#if defined(_WIN32)
+#ifndef WIN32_LEAN_AND_MEAN
+#define WIN32_LEAN_AND_MEAN
+#endif
+#ifndef NOMINMAX
+#define NOMINMAX
+#endif
+#include <windows.h>
+#else
 #include <sys/syscall.h>
 #include <unistd.h>
+#endif
 
 #include <algorithm>
 #include <chrono>
@@ -51,10 +61,14 @@ std::unordered_map<uint64_t, Site> g_sites;  // kind << 62 | argument << 32 | re
 Clock::time_point g_since;
 
 std::string ThreadName(long tid) {
+#if defined(_WIN32)
+  return std::to_string(tid);
+#else
   std::ifstream comm("/proc/self/task/" + std::to_string(tid) + "/comm");
   std::string name;
   std::getline(comm, name);
   return name.empty() ? "?" : name;
+#endif
 }
 
 // Called with g_lock held.
@@ -93,7 +107,11 @@ void Measure(Kind kind, PPCContext& ctx, Call call) {
   Site& site = g_sites[uint64_t(kind) << 62 | uint64_t(argument) << 32 | return_address];
   site.calls++;
   site.ns += uint64_t(std::chrono::duration_cast<std::chrono::nanoseconds>(end - start).count());
+#if defined(_WIN32)
+  site.tid = static_cast<long>(GetCurrentThreadId());
+#else
   site.tid = static_cast<long>(syscall(SYS_gettid));
+#endif
   ReportIfDue(end);
 }
 
