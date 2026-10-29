@@ -7,6 +7,9 @@ on:
     branches: [ "**" ]
   workflow_dispatch:
 
+permissions:
+  contents: write
+
 jobs:
   build:
     name: Build Release APK
@@ -37,11 +40,36 @@ jobs:
           chmod +x android/gradlew
           chmod +x build_android.sh
 
+      - name: Setup Release Keystore
+        run: |
+          mkdir -p ~/.android-keys/fh2-recompiled
+          keytool -genkeypair -v \
+            -keystore ~/.android-keys/fh2-recompiled/release.keystore \
+            -alias fh2release \
+            -keyalg RSA \
+            -keysize 2048 \
+            -validity 10000 \
+            -storepass android123 \
+            -keypass android123 \
+            -dname "CN=FH2 Recompiled, OU=Mobile, O=FH2, L=Jakarta, C=ID"
+          cat << 'EOF' > ~/.android-keys/fh2-recompiled/keystore.properties
+          storeFile=/home/runner/.android-keys/fh2-recompiled/release.keystore
+          storePassword=android123
+          keyAlias=fh2release
+          keyPassword=android123
+          EOF
+
       - name: Build Release APK with Gradle
         run: |
           export ANDROID_NDK_HOME="$ANDROID_HOME/ndk/28.2.13676358"
           cd android
           ./gradlew assembleRelease --no-daemon -Dorg.gradle.jvmargs="-Xmx6g -XX:+UseG1GC"
+
+      - name: Verify APK Signature (v1 and v2)
+        run: |
+          APK_PATH=$(ls android/app/build/outputs/apk/release/*.apk | head -n 1)
+          echo "Checking APK: $APK_PATH"
+          $ANDROID_HOME/build-tools/35.0.0/apksigner verify --verbose "$APK_PATH"
 
       - name: Upload APK Artifact
         uses: actions/upload-artifact@v4
@@ -49,3 +77,16 @@ jobs:
           name: FH2-Recompiled-Release-APK
           path: android/app/build/outputs/apk/release/*.apk
           retention-days: 14
+
+      - name: Publish Direct APK to GitHub Releases
+        if: github.ref == 'refs/heads/main'
+        env:
+          GITHUB_TOKEN: ${{ secrets.GITHUB_TOKEN }}
+        run: |
+          APK_PATH=$(ls android/app/build/outputs/apk/release/*.apk | head -n 1)
+          TAG="v0.4.3-android"
+          gh release delete "$TAG" --yes || true
+          git tag -d "$TAG" 2>/dev/null || true
+          gh release create "$TAG" "$APK_PATH" \
+            --title "FH2 Recompiled Android v0.4.3 (Direct APK)" \
+            --notes "Signed with both APK Signature Scheme v1 and v2 for full Android 8.0 - 15 compatibility. No unzip required."

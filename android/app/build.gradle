@@ -59,12 +59,18 @@ android {
     }
 
     signingConfigs {
+        debug {
+            v1SigningEnabled true
+            v2SigningEnabled true
+        }
         if (releaseKeyFile.exists()) {
             release {
                 storeFile file(releaseKeyProperties['storeFile'])
                 storePassword releaseKeyProperties['storePassword']
                 keyAlias releaseKeyProperties['keyAlias']
                 keyPassword releaseKeyProperties['keyPassword']
+                v1SigningEnabled true
+                v2SigningEnabled true
             }
         }
     }
