@@ -67,6 +67,10 @@ REXCVAR_DEFINE_STRING(gpu_plugin, "", "GPU",
                       "GPU emulation")
     .lifecycle(rex::cvar::Lifecycle::kInitOnly);
 
+REXCVAR_DEFINE_STRING(gpu, "vulkan", "GPU",
+                      "Graphics backend to use ('vulkan' or 'd3d12')")
+    .lifecycle(rex::cvar::Lifecycle::kInitOnly);
+
 REXCVAR_DECLARE(bool, achievement_toast_test);  // defined in overlay/achievement_toast.cpp
 
 namespace rex {
@@ -180,6 +184,17 @@ bool ReXApp::SetupEnvironment() {
     }
   }
 
+  // Automatic fallback: check for GAME_DATA folder next to executable
+  if (game_data_root_.empty()) {
+    if (std::filesystem::exists(exe_dir / "GAME_DATA")) {
+      game_data_root_ = exe_dir / "GAME_DATA";
+      resolved_defaults_.game_data_root = game_data_root_;
+    } else if (std::filesystem::exists(exe_dir / "game_data")) {
+      game_data_root_ = exe_dir / "game_data";
+      resolved_defaults_.game_data_root = game_data_root_;
+    }
+  }
+
   // Late-phase logging
   std::string log_file_cvar = REXCVAR_GET(log_file);
   std::string log_level_str = REXCVAR_GET(log_level);
@@ -230,30 +245,40 @@ bool ReXApp::SetupEnvironment() {
 }
 
 bool ReXApp::ConstructRuntime(const PathConfig& paths) {
-  if (paths.game_data_root.empty()) {
+  PathConfig effective_paths = paths;
+  if (effective_paths.game_data_root.empty()) {
+    auto exe_dir = rex::filesystem::GetExecutableFolder();
+    if (std::filesystem::exists(exe_dir / "GAME_DATA")) {
+      effective_paths.game_data_root = exe_dir / "GAME_DATA";
+    } else if (std::filesystem::exists(exe_dir / "game_data")) {
+      effective_paths.game_data_root = exe_dir / "game_data";
+    }
+  }
+
+  if (effective_paths.game_data_root.empty()) {
     auto msg = std::string("--game_data_root was not provided.");
     REXLOG_ERROR("{}", msg);
     rex::ShowSimpleMessageBox(rex::SimpleMessageBoxType::Error, msg);
     return false;
   }
   // A folder with the extracted disc, or the disc image itself (.iso, mounted by DiscImageDevice in SetupVfs).
-  if (!std::filesystem::is_directory(paths.game_data_root) &&
-      !std::filesystem::is_regular_file(paths.game_data_root)) {
-    auto msg = fmt::format("--game_data_root does not exist: {}", paths.game_data_root.string());
+  if (!std::filesystem::is_directory(effective_paths.game_data_root) &&
+      !std::filesystem::is_regular_file(effective_paths.game_data_root)) {
+    auto msg = fmt::format("--game_data_root does not exist: {}", effective_paths.game_data_root.string());
     REXLOG_ERROR("{}", msg);
     rex::ShowSimpleMessageBox(rex::SimpleMessageBoxType::Error, msg);
     return false;
   }
 
-  game_data_root_ = paths.game_data_root;
-  user_data_root_ = paths.user_data_root;
-  update_data_root_ = paths.update_data_root;
-  cache_root_ = paths.cache_root;
-  metadata_root_ = paths.metadata_root;
+  game_data_root_ = effective_paths.game_data_root;
+  user_data_root_ = effective_paths.user_data_root;
+  update_data_root_ = effective_paths.update_data_root;
+  cache_root_ = effective_paths.cache_root;
+  metadata_root_ = effective_paths.metadata_root;
 
   runtime_ =
-      std::make_unique<rex::Runtime>(paths.game_data_root, paths.user_data_root,
-                                     paths.update_data_root, paths.cache_root, paths.metadata_root);
+      std::make_unique<rex::Runtime>(effective_paths.game_data_root, effective_paths.user_data_root,
+                                     effective_paths.update_data_root, effective_paths.cache_root, effective_paths.metadata_root);
   runtime_->set_app_context(&app_context());
 
   // Window and ImGui drawer already exist from SetupPresentation; publish them
