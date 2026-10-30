@@ -150,6 +150,7 @@ void DebugOverlayDialog::OnDraw(ImGuiIO& io) {
 #if REX_PLATFORM_SWITCH
     PositionAfterBegin(io);
 #endif
+    ImGui::Text("FPS: %.1f (%.2f ms)", io.Framerate, 1000.0f / (io.Framerate > 0.0f ? io.Framerate : 60.0f));
     if (stats_provider_) {
       auto stats = stats_provider_();
       if (stats.frame_count > 0) {

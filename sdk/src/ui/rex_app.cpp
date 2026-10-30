@@ -172,8 +172,13 @@ bool ReXApp::SetupEnvironment() {
   resolved_defaults_ = std::move(path_config);
 
   // Load config FIRST so log cvars have final values
-  if (std::filesystem::exists(config_path_))
+  if (std::filesystem::exists(config_path_)) {
     rex::cvar::LoadConfig(config_path_);
+    if (game_data_root_.empty() && !REXCVAR_GET(game_data_root).empty()) {
+      game_data_root_ = REXCVAR_GET(game_data_root);
+      resolved_defaults_.game_data_root = game_data_root_;
+    }
+  }
 
   // Late-phase logging
   std::string log_file_cvar = REXCVAR_GET(log_file);
@@ -351,7 +356,8 @@ bool ReXApp::SetupPresentation() {
   OnPreSetup(config_);
 
   if (!config_.graphics && !config_.gpu_plugin.empty()) {
-    config_.graphics = rex::system::LoadGpuPlugin(config_.gpu_plugin);
+    std::string backend = REXCVAR_GET(gpu);
+    config_.graphics = rex::system::LoadGpuPlugin(config_.gpu_plugin, backend.empty() ? "any" : backend);
     if (!config_.graphics) {
       // Fatal by design: no silent headless fallback.
       auto msg =
