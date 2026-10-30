@@ -63,8 +63,8 @@ jobs:
             -DCMAKE_BUILD_TYPE=Release `
             -DCMAKE_C_COMPILER=clang `
             -DCMAKE_CXX_COMPILER=clang++ `
-            -DCMAKE_CXX_FLAGS="-D_ALLOW_COMPILER_AND_STL_VERSION_MISMATCH -msse4.1" `
-            -DCMAKE_C_FLAGS="-D_ALLOW_COMPILER_AND_STL_VERSION_MISMATCH -msse4.1" `
+            -DCMAKE_CXX_FLAGS="-D_ALLOW_COMPILER_AND_STL_VERSION_MISMATCH -O3 -march=x86-64-v3 -mavx2 -mfma -flto=thin" `
+            -DCMAKE_C_FLAGS="-D_ALLOW_COMPILER_AND_STL_VERSION_MISMATCH -O3 -march=x86-64-v3 -mavx2 -mfma -flto=thin" `
             -DREXSDK_DIR="${{ github.workspace }}/sdk" `
             -DREXGLUE_BUILD_TOOLS=OFF `
             -DREXGLUE_USE_D3D12=ON `
